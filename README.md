@@ -1,5 +1,5 @@
 This repo is a re-implementation of the model published in One-Shot Texture Retrieval with Global Context Metric in ijcai2019.
-
+### Note that these code contain some of my own modifications / improvements, please do not confuse this repo with the original / official method!
 
 ## To run model training on your own pc:
 
