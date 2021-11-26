@@ -23,7 +23,7 @@ pip install -U albumentations
 ```
 To exit virtual environment:
 ```
-deactivate  # Exit virtual environment
+deactivate                       # Exit virtual environment
 ```
 
 ## DTD dataset can be downloaded from here:
