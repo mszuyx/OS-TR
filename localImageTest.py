@@ -8,8 +8,8 @@ import cv2
 # import onnx
 # print(onnx.__version__)
 
-ref_path_ = '/home/ros/OS_TR/ref_4.jpg'
-query_path_ = '/home/ros/OS_TR/query_2.jpg'
+ref_path_ = '/home/ros/OS_TR/test_images/ref_4.jpg'
+query_path_ = '/home/ros/OS_TR/test_images/query_2.jpg'
 model_path_ = '/home/ros/OS_TR/log/dtd_dtd_weighted_bce_banded_0.001/snapshot-epoch_2021-11-25-16:42:11_texture.pth'
 model = torch.load(model_path_)
 model.eval()
