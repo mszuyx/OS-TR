@@ -1,7 +1,7 @@
 This repo is a re-implementation of the model published in One-Shot Texture Retrieval with Global Context Metric in ijcai2019.
 
 
-## To run the training on your own pc:
+## To run model training on your own pc:
 
 Navigate to the folder directory, open a terminal and create a virtual environment:
 ```
@@ -25,3 +25,13 @@ To exit virtual environment:
 ```
 deactivate  # Exit virtual environment
 ```
+
+## DTD dataset can be downloaded from here:
+https://www.robots.ox.ac.uk/~vgg/data/dtd/
+
+Please place the downloaded .pth file under the root directory (where train.py is placed) for the train.py to work.
+
+## The encoder backbone (pre-trained ResNet50 19c8e357) can be downloaded from here:
+https://download.pytorch.org/models/resnet50-19c8e357.pth
+
+Please place the downloaded .pth file under /utils/model/ for the train.py to work.
