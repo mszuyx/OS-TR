@@ -19,6 +19,7 @@ class ChannelAttention(nn.Module):
         self.fc2 = nn.Conv2d(in_planes // 16, in_planes, 1, bias=False)
 
         self.sigmoid = nn.Sigmoid()
+        
 
     def forward(self, x):
         avg_out = self.fc2(self.relu1(self.fc1(self.avg_pool(x))))
@@ -36,6 +37,7 @@ class SpatialAttention(nn.Module):
 
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
+        # self.relu = nn.ReLU()
 
     def forward(self, x):
         avg_out = torch.mean(x, dim=1, keepdim=True)
@@ -144,7 +146,7 @@ class ResNet(nn.Module):
         return x
 
 
-def resnet50(pretrained=False, **kwargs):
+def resnet50(pretrained=False,freeze=False, **kwargs):
     """Constructs a ResNet-50 model.
 
     Args:
@@ -153,8 +155,22 @@ def resnet50(pretrained=False, **kwargs):
     model = ResNet(Bottleneck, [3, 4, 6, 3], **kwargs)
     if pretrained:
         model.load_state_dict(torch.load('utils/model/resnet50-19c8e357.pth'))
+    
+    if freeze:
+        for param in model.parameters():
+            param.requires_grad = False
+
     return model
 
+def mobilenet_v2(freeze=False):
+    """Constructs a mobilenet_v2 model.
+    """
+    model = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
+    model = torch.nn.Sequential(*(list(model.children())[:-1]))
+    if freeze:
+        for param in model.parameters():
+            param.requires_grad = False
+    return model
 
 def deep_orientation_gen(ins):
     # Up and Down
@@ -419,12 +435,14 @@ class encode1(nn.Module):
         x = self.resnet(x)
         return x
 
-
+##################### Final model assembly #####################
 class OSnet(nn.Module):
     def __init__(self):
         super().__init__()
-        self.encode = encode(model=resnet50(pretrained=True))
-        self.encode1 = encode1(model=resnet50(pretrained=True))
+        self.encode = encode(model=resnet50(pretrained=True,freeze=True))
+        self.encode1 = encode1(model=resnet50(pretrained=True,freeze=True))
+        # self.encode = encode(model=mobilenet_v2(freeze=True))
+        # self.encode1 = encode1(model=mobilenet_v2(freeze=True))
         self.ca = ChannelAttention(in_planes=1024)
         # self.sa = SpatialAttention()
         self.encode_texture = Deep_Orientation(2048, 2048, 512)
@@ -456,7 +474,6 @@ class OSnet(nn.Module):
             nn.Conv2d(512, 1, 1),
         )
 
-
     def forward(self, image, patch):
         img1, img2, img3, img4 = self.encode(image)
         pat4 = self.encode1(patch)
@@ -478,21 +495,20 @@ class OSnet(nn.Module):
             else:
                 img += img_g
 
-
-
-        img = F.interpolate(img, 16)
+        img = F.interpolate(img, 16, mode='bilinear', align_corners=False)
 
         img = torch.cat([img, img3], dim=1)
         img = self.decode2(img)
-        img = F.interpolate(img, 32)
+        img = F.interpolate(img, 32, mode='bilinear', align_corners=False)
 
         img = torch.cat([img, img2], dim=1)
         img = self.decode3(img)
-        img = F.interpolate(img, 64)
+        img = F.interpolate(img, 64, mode='bilinear', align_corners=False)
 
         img = torch.cat([img, img1], dim=1)
         img = self.decode4(img)
-        img = F.interpolate(img, 256)
+        img = F.interpolate(img, 256, mode='bilinear', align_corners=False)
+
         img = torch.sigmoid(img)
         return img
 
