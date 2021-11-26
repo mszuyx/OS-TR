@@ -21,6 +21,18 @@ Install albumentations if you want to play with data augmentation:
 ```
 pip install -U albumentations
 ```
+To start the training:
+```
+python3 train_ver2.py
+```
+**If you encounter some runtime memory issues, you can decrease the batch_size / num_workers according to your GPU spec**
+
+To test the trained model:
+```
+python3 localImageTest.py
+```
+**Most likely you will be getting "file not found error" since I hardcored most of the file directories, remember to change them in the scripts according to your file system.**
+
 To exit virtual environment:
 ```
 deactivate                       # Exit virtual environment
