@@ -19,7 +19,7 @@ from utils.loss import myloss
 import matplotlib.pyplot as plt
 from torchsummary import summary
 
-def main(seed=2018, epoches=300): #80
+def main(seed=2018, epoches=500): #80
     parser = argparse.ArgumentParser(description='my_trans')
 
     # dataset option
@@ -52,6 +52,8 @@ def main(seed=2018, epoches=300): #80
             A.ShiftScaleRotate (shift_limit=0.1, scale_limit=0.1, rotate_limit=30, interpolation=1, border_mode=4, p=0.5),
             A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
             A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
+            A.Affine (scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.2),
+            A.PiecewiseAffine (scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.1),
             ToTensorV2()
         ])
 
@@ -119,7 +121,7 @@ def main(seed=2018, epoches=300): #80
     optim_para = filter(lambda p: p.requires_grad, model.parameters())
     # optimizer = torch.optim.SGD(optim_para, lr=args.lr, momentum=0.9, weight_decay=1e-4)
     optimizer = torch.optim.Adam(optim_para,lr=args.lr)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8) #10 , 0.8
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8) #10 , 0.8
 
     # viz = visdom.Visdom(env='train')
     # # loss_win = viz.line(np.arange(10))
@@ -217,7 +219,7 @@ def main(seed=2018, epoches=300): #80
         logging.info("{:10s} {:.3f}".format('best_IoU', IoU_final))
 
         model.train()
-        # scheduler.step()
+        scheduler.step()
 
     logging.info(epoch_final)
     logging.info(IoU_final)
