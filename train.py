@@ -14,9 +14,10 @@ from utils.model import models
 from utils.evaluate import Evaluator
 from utils.loss import myloss
 # import visdom
+import matplotlib.pyplot as plt
+from torchsummary import summary
 
-
-def main(seed=2018, epoches=80):
+def main(seed=2018, epoches=300): #80
     parser = argparse.ArgumentParser(description='my_trans')
 
     # dataset option
@@ -25,7 +26,7 @@ def main(seed=2018, epoches=80):
     parser.add_argument('--loss_name', type=str, default='weighted_bce', choices=['weighted_bce', 'DF'], help='model name (default: my)')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='LR', help='learning rate (default: auto)')
     parser.add_argument('--checkname', type=int, default=0, help='set the checkpoint name')
-    parser.add_argument('--train_batch_size', type=int, default=8,
+    parser.add_argument('--train_batch_size', type=int, default=16,
                         metavar='N', help='input batch size for training (default: auto)')
     parser.add_argument('--test_batch_size', type=int, default=8,
                         metavar='N', help='input batch size for testing (default: auto)')
@@ -42,9 +43,22 @@ def main(seed=2018, epoches=80):
 
     if args.dataset_name == 'dtd':
         transform_zk = transforms.Compose([
+            # transforms.Resize(254),
             transforms.ToTensor(),
             transforms.Normalize((0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667))
+
         ])
+        transform_aug = transforms.Compose([
+            # transforms.Resize(254),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667)),
+            # transforms.RandomVerticalFlip(p=0.5),
+            # transforms.RandomHorizontalFlip(p=0.5),
+            # transforms.RandomPerspective(distortion_scale=0.5, p=0.1),
+            # transforms.RandomRotation([-20,20])
+            # transforms.RandomResizedCrop(size=256, scale=(0.25, 1.0), ratio=(0.75, 1.3333333333333333))
+            # transforms.ColorJitter(brightness=(0.4,0.6), contrast=(0.4,0.6), saturation=(0,1), hue=(-0.1,0.1))
+            ])
         evaluator = Evaluator(num_class=6)
     # elif args.dataset_name == 'os':
     #     transform_zk = transforms.Compose([
@@ -61,9 +75,9 @@ def main(seed=2018, epoches=80):
 
     mydataset_embedding = datasets[args.dataset_name]
     data_val1 = mydataset_embedding(split='test1', transform=transform_zk, checkpoint=args.checkname)
-    loader_val1 = torch.utils.data.DataLoader(data_val1, batch_size=args.test_batch_size, shuffle=False)
+    loader_val1 = torch.utils.data.DataLoader(data_val1, batch_size=args.test_batch_size, num_workers = 8, pin_memory=True, shuffle=False)
     data_train = mydataset_embedding(split='train', transform=transform_zk, checkpoint=args.checkname)
-    loader_train = torch.utils.data.DataLoader(data_train, batch_size=args.train_batch_size, shuffle=True)
+    loader_train = torch.utils.data.DataLoader(data_train, batch_size=args.train_batch_size, num_workers = 8, pin_memory=True, shuffle=True)
 
     # evaluator = Evaluator(num_class=6)
 
@@ -81,20 +95,21 @@ def main(seed=2018, epoches=80):
     logging.info('test with: %s', data_val1.test)
 
     model = models[args.model_name]()
-
+    
     if torch.cuda.device_count() > 1:
         model = nn.DataParallel(model)
 
     if torch.cuda.is_available():
         model = model.cuda()
-
+    summary(model, [(3,256,256),(3,256,256)])
     model.train()
 
     criterion = myloss[args.loss_name]()
 
     optim_para = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = torch.optim.SGD(optim_para, lr=args.lr, momentum=0.9, weight_decay=1e-4)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
+    # optimizer = torch.optim.Adam(optim_para,lr=args.lr)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8) #10 , 0.8
 
     # viz = visdom.Visdom(env='train')
     # # loss_win = viz.line(np.arange(10))
@@ -111,19 +126,19 @@ def main(seed=2018, epoches=80):
     iteration = 0
 
     for epoch in range(epoches):
-        scheduler.step()
+        # scheduler.step()
+        
         train_loss = 0
         logging.info('epoch:' + str(epoch))
         start = time.time()
         np.random.seed(epoch)
         for i, data in enumerate(loader_train):
             _, _, inputs, target, patch, _ = data[0], data[1], data[2], data[3], data[4], data[5]
-
             inputs = inputs.float()
             iteration += 1
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
-                target = target.cuda(async=True)
+                target = target.cuda(non_blocking=True) #target = target.cuda(async=True)
                 patch = patch.cuda()
 
             output = model(inputs, patch)
@@ -155,42 +170,46 @@ def main(seed=2018, epoches=80):
         #     if not os.path.exists(pic_dir):
         #         os.mkdir(pic_dir)
         #     visual(model, loader_val1, pic_dir)
+        with torch.no_grad():
+            evaluator.reset()
+            np.random.seed(2019)
+            for i, data in enumerate(loader_val1):
+                _, _, inputs, target, patch, image_class = data[0], data[1], data[2], data[3], data[4], data[5]
+                inputs = inputs.float()
+                if torch.cuda.is_available():
+                    inputs = inputs.cuda()
+                    target = target.cuda(non_blocking=True) #target = target.cuda(async=True)
+                    patch = patch.cuda()
 
-        evaluator.reset()
-        np.random.seed(2019)
-        for i, data in enumerate(loader_val1):
-            _, _, inputs, target, patch, image_class = data[0], data[1], data[2], data[3], data[4], data[5]
-            inputs = inputs.float()
-            if torch.cuda.is_available():
-                inputs = inputs.cuda()
-                target = target.cuda(async=True)
-                patch = patch.cuda()
+                scores = model(inputs, patch)
+                scores[scores >= 0.5] = 1
+                scores[scores < 0.5] = 0
+                seg = scores[:, 0, :, :].long()
+                pred = seg.data.cpu().numpy()
+                target = target.cpu().numpy()
+                # Add batch sample into evaluator
+                evaluator.add_batch(target, pred, image_class)
 
-            scores = model(inputs, patch)
-            scores[scores >= 0.5] = 1
-            scores[scores < 0.5] = 0
-            seg = scores[:, 0, :, :].long()
-            pred = seg.data.cpu().numpy()
-            target = target.cpu().numpy()
-            # Add batch sample into evaluator
-            evaluator.add_batch(target, pred, image_class)
+            mIoU, mIoU_d = evaluator.Mean_Intersection_over_Union()
+            FBIoU = evaluator.FBIoU()
 
-        mIoU, mIoU_d = evaluator.Mean_Intersection_over_Union()
-        FBIoU = evaluator.FBIoU()
-
-        logging.info("{:10s} {:.3f}".format('IoU_mean', mIoU))
-        logging.info("{:10s} {}".format('IoU_mean_detail', mIoU_d))
-        logging.info("{:10s} {:.3f}".format('FBIoU', FBIoU))
-        if mIoU > IoU_final:
-            epoch_final = epoch
-            IoU_final = mIoU
-            torch.save(model.state_dict(), snapshot_path)
-        logging.info('best_epoch:' + str(epoch_final))
-        logging.info("{:10s} {:.3f}".format('best_IoU', IoU_final))
+            logging.info("{:10s} {:.3f}".format('IoU_mean', mIoU))
+            logging.info("{:10s} {}".format('IoU_mean_detail', mIoU_d))
+            logging.info("{:10s} {:.3f}".format('FBIoU', FBIoU))
+            if mIoU > IoU_final:
+                epoch_final = epoch
+                IoU_final = mIoU
+                # torch.save(model.state_dict(), snapshot_path)
+                torch.save(model, snapshot_path)
+            logging.info('best_epoch:' + str(epoch_final))
+            logging.info("{:10s} {:.3f}".format('best_IoU', IoU_final))
         model.train()
+        scheduler.step()
 
     logging.info(epoch_final)
     logging.info(IoU_final)
+    final_path = dir_name + '/final_{epoches}_texture.pth'.format(epoches=now_time)
+    torch.save(model, final_path)
 
 
 if __name__ == '__main__':
