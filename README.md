@@ -1,2 +1,1 @@
-Supplementary materials One-Shot Texture Retrieval with Global Context Metric in ijcai2019.
-Code has been available! Readme for running will be availabe recently!
+This repo is a re-implementation of the model published in One-Shot Texture Retrieval with Global Context Metric in ijcai2019.
