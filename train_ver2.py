@@ -45,29 +45,29 @@ def main(seed=2018, epoches=500): #80
 
     if args.dataset_name == 'dtd':
         transform_train_ = A.Compose([
-            A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
+            # A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
             A.HorizontalFlip(p=0.5),
             A.Flip(p=0.5),
             A.RandomRotate90(p=0.5),
-            A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-            A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
-            A.Affine (scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.3),
-            A.PiecewiseAffine (scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.2),
+            A.Affine(scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.3),
+            A.PiecewiseAffine(scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.2),
+            A.RandomBrightnessContrast(brightness_limit=(-0.3,0.3), contrast_limit=(-0.3,0.3), p=0.5),
+            A.RGBShift(r_shift_limit=(-80,80), g_shift_limit=(-80,80), b_shift_limit=(-80,80), p=0.5),
             ToTensorV2()
         ])
 
         transform_ref_ = A.Compose([
-            A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
+            # A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
             A.HorizontalFlip(p=0.5),
             A.Flip(p=0.5),
             A.RandomRotate90(p=0.5),
-            A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-            A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
+            A.RandomBrightnessContrast(brightness_limit=(-0.3,0.3), contrast_limit=(-0.3,0.3), p=0.5),
+            A.RGBShift(r_shift_limit=(-80,80), g_shift_limit=(-80,80), b_shift_limit=(-80,80), p=0.5),
             ToTensorV2()
         ])
 
         transform_valid_ = A.Compose([
-            A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
+            # A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
             ToTensorV2()
         ])
         # transform_zk = transforms.Compose([
