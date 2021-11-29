@@ -17,12 +17,13 @@ class mydataset_embedding(torch.utils.data.Dataset):
     mean = (136.544425, 123.722431, 113.253360)
     std = (68.155618, 66.077526, 68.080128)
 
-    def __init__(self, split='train', transform=None, checkpoint=0):
+    def __init__(self, split='train', transform=None, transform_ref=None, checkpoint=0):
         self.split = split
         self.transform = transform
+        self.transform_ref = transform_ref
         self.image_path = []
-        # self.dir = '/home/forrest/zhukai/dtd/images'
-        self.dir = '/media/zhukai/新加卷/texture/dtd/images'
+        self.dir = '/home/ros/OS_TR/dtd/images'
+        # self.dir = '/media/zhukai/新加卷/texture/dtd/images'
         self.idx_to_class, self.image_path_all = self.load_path(self.dir)
         print(self.idx_to_class)
         self.texture = np.zeros((5, 256, 256, 3))
@@ -31,11 +32,18 @@ class mydataset_embedding(torch.utils.data.Dataset):
             for i in range(5*checkpoint+5, 5*checkpoint+47):
                 j = i % 47
                 self.image_path.append(self.image_path_all[j])
+        elif split == 'all':
+            for i in range(0, 47):
+                self.test.append(self.idx_to_class[i])
+                self.image_path.append(self.image_path_all[i][:])
         else:
             for i in range(5*checkpoint, 5*checkpoint+5):
                 self.test.append(self.idx_to_class[i])
                 self.image_path.append(self.image_path_all[i])
         self.len = len(self.image_path)
+        print("Split type: " + split)
+        print("Total extracted classes: " + str(self.len))
+        print("Total image path: " + str(self.len*len(self.image_path[0])))
 
     def load_path(self, path):
         image_path_all = []
@@ -74,10 +82,27 @@ class mydataset_embedding(torch.utils.data.Dataset):
         query_pic, query_target = generate_collages(self.texture)
         query_pic = query_pic.astype(np.uint8)
         if self.transform is not None:
-            query_pic1 = self.transform(query_pic)
-            support_pic1 = self.transform(support_pic)
+            transformed = self.transform(image=query_pic, mask=query_target)
+            if self.transform_ref is not None:
+                transformed_ref = self.transform_ref(image=support_pic)
 
-        return query_pic, support_pic, query_pic1, query_target, support_pic1, index_new+1
+            query_pic_tf = transformed["image"]/255.0
+            query_target_tf = transformed["mask"]
+            support_pic_tf = transformed_ref["image"]/255.0
+        else:
+            query_pic_tf = query_pic
+            query_target_tf = query_target
+            support_pic_tf = support_pic
+
+        return query_pic, support_pic, query_pic_tf, query_target_tf, support_pic_tf, index_new+1
+
+        # if self.transform is not None:
+        #     query_pic1 = self.transform(query_pic)
+        #     support_pic1 = self.transform(support_pic)
+        # else:
+        #     query_pic1 = query_pic
+        #     support_pic1 = support_pic
+        # return query_pic, support_pic, query_pic1, query_target, support_pic1, index_new+1
 
     def __len__(self):
         if self.split == 'train':

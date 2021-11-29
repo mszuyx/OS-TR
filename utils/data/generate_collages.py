@@ -1,5 +1,5 @@
 import numpy as np
-# import matplotlib.pyplot as pyplot
+import matplotlib.pyplot as plt
 
 np.random.seed(1)
 
@@ -18,7 +18,7 @@ def generate_collages(
 
 def generate_random_masks(img_size=(256, 256), segmentation_regions=5, points=None):
     xs, ys = np.meshgrid(np.arange(0, img_size[2]), np.arange(0, img_size[1]))
-
+    # print(xs,ys)
     if points is None:
         n_points = np.random.randint(2, segmentation_regions + 1)
         points = np.random.randint(0, img_size[1], size=(n_points, 2))
@@ -28,6 +28,18 @@ def generate_random_masks(img_size=(256, 256), segmentation_regions=5, points=No
     masks_b = np.zeros((img_size[1], img_size[2], segmentation_regions), dtype=int)
     for m in range(segmentation_regions):
         masks_b[:, :, m][voronoi == m] = 1
+
+    for m in range(segmentation_regions):
+        num_c = np.random.randint(1, 3)
+        rs = np.random.uniform(10, 50, size = (num_c,))
+        cpc = np.random.uniform(0, masks_b.shape[0], size = (num_c,2))
+        dist_center = [np.sqrt((xs - c[0]) ** 2 + (ys - c[1]) ** 2) for c in cpc]
+
+        for i in range(len(rs)):
+            mask = dist_center[i] <= rs[i]
+            masks_b[mask] = 0
+            masks_b[:, :, m][mask] = 1
+
     return masks_b
 
 # def generate_validation_collages(N=240):
