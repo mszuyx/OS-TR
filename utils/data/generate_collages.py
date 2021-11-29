@@ -1,7 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
-np.random.seed(1)
+np.random.seed(233)
 
 # trans
 def generate_collages(
@@ -18,7 +18,7 @@ def generate_collages(
 
 def generate_random_masks(img_size=(256, 256), segmentation_regions=5, points=None):
     xs, ys = np.meshgrid(np.arange(0, img_size[2]), np.arange(0, img_size[1]))
-    # print(xs,ys)
+
     if points is None:
         n_points = np.random.randint(2, segmentation_regions + 1)
         points = np.random.randint(0, img_size[1], size=(n_points, 2))
@@ -26,6 +26,7 @@ def generate_random_masks(img_size=(256, 256), segmentation_regions=5, points=No
     dists_b = [np.sqrt((xs - p[0]) ** 2 + (ys - p[1]) ** 2) for p in points]
     voronoi = np.argmin(dists_b, axis=0)
     masks_b = np.zeros((img_size[1], img_size[2], segmentation_regions), dtype=int)
+    
     for m in range(segmentation_regions):
         masks_b[:, :, m][voronoi == m] = 1
 
