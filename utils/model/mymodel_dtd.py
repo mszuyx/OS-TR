@@ -15,7 +15,7 @@ class ChannelAttention(nn.Module):
         self.max_pool = nn.AdaptiveMaxPool2d(1)
 
         self.fc1 = nn.Conv2d(in_planes, in_planes // 16, 1, bias=False)
-        self.relu1 = nn.ReLU()
+        self.relu1 = nn.ReLU(inplace=True)
         self.fc2 = nn.Conv2d(in_planes // 16, in_planes, 1, bias=False)
 
         self.sigmoid = nn.Sigmoid()
@@ -37,7 +37,6 @@ class SpatialAttention(nn.Module):
 
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
-        # self.relu = nn.ReLU()
 
     def forward(self, x):
         avg_out = torch.mean(x, dim=1, keepdim=True)
@@ -92,14 +91,14 @@ class ResNet(nn.Module):
         self.inplanes = 64
         super(ResNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
-                               bias=False)
+                               bias=False)                                      # Stride 2 downsampling
         self.bn1 = nn.BatchNorm2d(64)
         self.relu = nn.ReLU(inplace=True)
-        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)         # Stride 2 downsampling
+        self.layer1 = self._make_layer(block, 64, layers[0])                    # img1 out
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)         # Stride 2 downsampling, img2 out
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)         # Stride 2 downsampling, img3 out
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)         # Stride 2 downsampling, img4 out
         self.avgpool = nn.AvgPool2d(7, stride=1)
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
@@ -350,25 +349,25 @@ class Deep_Orientation(nn.Module):
 
         self.scale = nn.Sequential(
             nn.Linear(8, 8),
-            nn.ReLU(True),
+            nn.ReLU(inplace=True),
             nn.Linear(8, 8),
             # nn.Sigmoid(),
             nn.Softmax(dim=1),
         )
 
     def forward(self, x, stage=None):
-        x = F.relu(self.transition_1(self.transition_1_bn(x)))
+        x = F.relu(self.transition_1(self.transition_1_bn(x)),inplace=True)
 
         ins_U_new, ins_D_new, ins_L_new, ins_R_new, ins_LU_new, ins_RD_new, ins_RU_new, ins_LD_new = deep_orientation_gen(x)
 
-        ins_U_new = F.relu(self.transition_2_U(self.transition_2_U_bn(ins_U_new)))
-        ins_D_new = F.relu(self.transition_2_D(self.transition_2_D_bn(ins_D_new)))
-        ins_L_new = F.relu(self.transition_2_L(self.transition_2_L_bn(ins_L_new)))
-        ins_R_new = F.relu(self.transition_2_R(self.transition_2_R_bn(ins_R_new)))
-        ins_LU_new = F.relu(self.transition_2_LU(self.transition_2_LU_bn(ins_LU_new)))
-        ins_RD_new = F.relu(self.transition_2_RD(self.transition_2_RD_bn(ins_RD_new)))
-        ins_RU_new = F.relu(self.transition_2_RU(self.transition_2_RU_bn(ins_RU_new)))
-        ins_LD_new = F.relu(self.transition_2_LD(self.transition_2_LD_bn(ins_LD_new)))
+        ins_U_new = F.relu(self.transition_2_U(self.transition_2_U_bn(ins_U_new)),inplace=True)
+        ins_D_new = F.relu(self.transition_2_D(self.transition_2_D_bn(ins_D_new)),inplace=True)
+        ins_L_new = F.relu(self.transition_2_L(self.transition_2_L_bn(ins_L_new)),inplace=True)
+        ins_R_new = F.relu(self.transition_2_R(self.transition_2_R_bn(ins_R_new)),inplace=True)
+        ins_LU_new = F.relu(self.transition_2_LU(self.transition_2_LU_bn(ins_LU_new)),inplace=True)
+        ins_RD_new = F.relu(self.transition_2_RD(self.transition_2_RD_bn(ins_RD_new)),inplace=True)
+        ins_RU_new = F.relu(self.transition_2_RU(self.transition_2_RU_bn(ins_RU_new)),inplace=True)
+        ins_LD_new = F.relu(self.transition_2_LD(self.transition_2_LD_bn(ins_LD_new)),inplace=True)
 
         batch = ins_U_new.shape[0]
         scale_U, _ = ins_U_new.reshape((batch, -1)).max(1)
@@ -405,7 +404,7 @@ class Deep_Orientation(nn.Module):
         ins_LD_new = scale[:, 7:8].unsqueeze(2).unsqueeze(3) * ins_LD_new
 
         x = torch.cat((ins_U_new, ins_D_new, ins_L_new, ins_R_new, ins_LU_new, ins_RD_new, ins_RU_new, ins_LD_new), 1)
-        out = F.relu(self.transition_3(self.transition_3_bn(x)))
+        out = F.relu(self.transition_3(self.transition_3_bn(x)),inplace=True)
 
         return out
 
@@ -453,7 +452,7 @@ class OSnet(nn.Module):
                 nn.ReLU(inplace=True),
                 nn.Conv2d(1024, 1024, 1),
                 nn.BatchNorm2d(1024),
-                nn.ReLU(inplace=True),
+                nn.ReLU(inplace=True)
                 )
 
         self.decode2 = nn.Sequential(
@@ -475,39 +474,38 @@ class OSnet(nn.Module):
         )
 
     def forward(self, image, patch):
-        img1, img2, img3, img4 = self.encode(image)
-        pat4 = self.encode1(patch)
-        img4 = self.encode_texture(img4)
-        pat4 = self.encode_texture1(pat4)
+        img1, img2, img3, img4 = self.encode(image) # ResNet50 backbone encoding
+        pat4 = self.encode1(patch)                  # ResNet50 backbone encoding
+        img4 = self.encode_texture(img4)            # Directionality-Aware Module
+        pat4 = self.encode_texture1(pat4)           # Directionality-Aware Module
 
-
+        # Global Context Module
         for i in range(8):
             img_g = img4[:, 256 * i:256 * i + 256, :, :]
             pat = pat4[:, 256 * i:256 * i + 256, :, :]
             img_g = torch.cat([img_g, pat], dim=1)
             img_g = self.embedding(img_g)
-            ca = self.ca(img_g)
-            # if i == 7:
-            #     caa = ca
+            ca = self.ca(img_g) # Channel-Wise Attention
             img_g = ca * img_g
             if i == 0:
                 img = img_g
             else:
                 img += img_g
 
-        img = F.interpolate(img, 16, mode='bilinear', align_corners=False)
+        # Decoder
+        img = F.interpolate(img, 16, mode='bilinear', align_corners=False) # bilinear upsampling x 2
 
         img = torch.cat([img, img3], dim=1)
         img = self.decode2(img)
-        img = F.interpolate(img, 32, mode='bilinear', align_corners=False)
+        img = F.interpolate(img, 32, mode='bilinear', align_corners=False) # bilinear upsampling x 2
 
         img = torch.cat([img, img2], dim=1)
         img = self.decode3(img)
-        img = F.interpolate(img, 64, mode='bilinear', align_corners=False)
+        img = F.interpolate(img, 64, mode='bilinear', align_corners=False) # bilinear upsampling x 2
 
         img = torch.cat([img, img1], dim=1)
         img = self.decode4(img)
-        img = F.interpolate(img, 256, mode='bilinear', align_corners=False)
+        img = F.interpolate(img, 256, mode='bilinear', align_corners=False) # bilinear upsampling x 4
 
         img = torch.sigmoid(img)
         return img
