@@ -44,27 +44,30 @@ def main(seed=2018, epoches=500): #80
     np.random.seed(seed)
 
     if args.dataset_name == 'dtd':
-        transform_train = A.Compose([
-            # A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
+        transform_train_ = A.Compose([
+            A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
             A.HorizontalFlip(p=0.5),
             A.Flip(p=0.5),
             A.RandomRotate90(p=0.5),
-            A.ShiftScaleRotate (shift_limit=0.1, scale_limit=0.1, rotate_limit=30, interpolation=1, border_mode=4, p=0.5),
             A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
             A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
-            A.Affine (scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.2),
-            A.PiecewiseAffine (scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.1),
+            A.Affine (scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.3),
+            A.PiecewiseAffine (scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.2),
             ToTensorV2()
         ])
 
-        transform_valid = A.Compose([
-            # A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
-            # A.HorizontalFlip(p=0.5),
-            # A.Flip(p=0.5),
-            # A.RandomRotate90(p=0.5),
-            # A.ShiftScaleRotate (shift_limit=0.1, scale_limit=0.1, rotate_limit=30, interpolation=1, border_mode=4, p=0.5),
-            # A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-            # A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
+        transform_ref_ = A.Compose([
+            A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
+            A.HorizontalFlip(p=0.5),
+            A.Flip(p=0.5),
+            A.RandomRotate90(p=0.5),
+            A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
+            A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
+            ToTensorV2()
+        ])
+
+        transform_valid_ = A.Compose([
+            A.Normalize (mean=(0.5355, 0.4852, 0.4441), std=(0.2667, 0.2588, 0.2667),p=1),
             ToTensorV2()
         ])
         # transform_zk = transforms.Compose([
@@ -88,9 +91,9 @@ def main(seed=2018, epoches=500): #80
     #     evaluator = Evaluator(num_class=7)
 
     mydataset_embedding = datasets[args.dataset_name]
-    data_val1 = mydataset_embedding(split='test1', transform = transform_valid, transform_ref = transform_valid, checkpoint=args.checkname)
+    data_val1 = mydataset_embedding(split='test1', transform = transform_valid_, transform_ref = transform_valid_, checkpoint=args.checkname)
     loader_val1 = torch.utils.data.DataLoader(data_val1, batch_size=args.test_batch_size, num_workers = 12, pin_memory=True, shuffle=False)
-    data_train = mydataset_embedding(split='train', transform = transform_train, transform_ref = transform_train, checkpoint=args.checkname)
+    data_train = mydataset_embedding(split='train', transform = transform_train_, transform_ref = transform_ref_, checkpoint=args.checkname)
     loader_train = torch.utils.data.DataLoader(data_train, batch_size=args.train_batch_size, num_workers = 12, pin_memory=True, shuffle=True)
 
     dir_name = 'log/' + str(args.dataset_name) + '_' + str(args.model_name) + '_' + str(args.loss_name) + '_' + data_val1.test[0] + '_' + str(args.lr)
@@ -147,6 +150,7 @@ def main(seed=2018, epoches=500): #80
         for i, data in enumerate(loader_train):
             _, _, inputs, target, patch, _ = data[0], data[1], data[2], data[3], data[4], data[5]
             # inputs = inputs.float()
+            # patch = patch.float()
             iteration += 1
             if torch.cuda.is_available():
                 inputs = inputs.cuda()
