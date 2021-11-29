@@ -434,11 +434,86 @@ class encode1(nn.Module):
         return x
 
 ##################### Final model assembly #####################
-class OSnet(nn.Module):
+class OSnet_frozen(nn.Module):
     def __init__(self):
         super().__init__()
         self.encode = encode(model=resnet50(pretrained=True,freeze=True))
         self.encode1 = encode1(model=resnet50(pretrained=True,freeze=True))
+        # self.encode = encode(model=mobilenet_v2(freeze=True))
+        # self.encode1 = encode1(model=mobilenet_v2(freeze=True))
+        self.ca = ChannelAttention(in_planes=1024)
+        # self.sa = SpatialAttention()
+        self.encode_texture = Deep_Orientation(2048, 2048, 512)
+        self.encode_texture1 = Deep_Orientation(2048, 2048, 512)
+        self.embedding = nn.Sequential(
+                nn.Conv2d(512, 1024, 1),
+                nn.BatchNorm2d(1024),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(1024, 1024, 1),
+                nn.BatchNorm2d(1024),
+                nn.ReLU(inplace=True)
+                )
+
+        self.decode2 = nn.Sequential(
+            nn.Conv2d(2048, 512, 1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+        )
+
+        self.decode3 = nn.Sequential(
+            nn.Conv2d(1024, 256, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+        )
+        self.decode4 = nn.Sequential(
+            nn.Conv2d(512, 512, 1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 1, 1),
+        )
+
+    def forward(self, image, patch):
+        img1, img2, img3, img4 = self.encode(image) # ResNet50 backbone encoding
+        pat4 = self.encode1(patch)                  # ResNet50 backbone encoding
+        img4 = self.encode_texture(img4)            # Directionality-Aware Module
+        pat4 = self.encode_texture1(pat4)           # Directionality-Aware Module
+
+        # Global Context Module
+        for i in range(8):
+            img_g = img4[:, 256 * i:256 * i + 256, :, :]
+            pat = pat4[:, 256 * i:256 * i + 256, :, :]
+            img_g = torch.cat([img_g, pat], dim=1)
+            img_g = self.embedding(img_g)
+            ca = self.ca(img_g) # Channel-Wise Attention
+            img_g = ca * img_g
+            if i == 0:
+                img = img_g
+            else:
+                img += img_g
+
+        # Decoder
+        img = F.interpolate(img, 16, mode='bilinear', align_corners=False) # bilinear upsampling x 2
+
+        img = torch.cat([img, img3], dim=1)
+        img = self.decode2(img)
+        img = F.interpolate(img, 32, mode='bilinear', align_corners=False) # bilinear upsampling x 2
+
+        img = torch.cat([img, img2], dim=1)
+        img = self.decode3(img)
+        img = F.interpolate(img, 64, mode='bilinear', align_corners=False) # bilinear upsampling x 2
+
+        img = torch.cat([img, img1], dim=1)
+        img = self.decode4(img)
+        img = F.interpolate(img, 256, mode='bilinear', align_corners=False) # bilinear upsampling x 4
+
+        img = torch.sigmoid(img)
+        return img
+
+class OSnet_free(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.encode = encode(model=resnet50(pretrained=True,freeze=False))
+        self.encode1 = encode1(model=resnet50(pretrained=True,freeze=False))
         # self.encode = encode(model=mobilenet_v2(freeze=True))
         # self.encode1 = encode1(model=mobilenet_v2(freeze=True))
         self.ca = ChannelAttention(in_planes=1024)
