@@ -19,7 +19,8 @@ from torch.autograd import Variable
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
-model_path_ = '/home/ros/OS_TR/log/dtd_dtd_weighted_bce_banded_0.001/snapshot-epoch_2021-11-25-16:42:11_texture.pth'
+# model_path_ = '/home/ros/OS_TR/log/dtd_dtd_weighted_bce_banded_0.001/snapshot-epoch_2021-11-28-20:09:18_texture.pth'
+model_path_ = '/home/ros/OS_TR/log/tcd_ResNet50_frozen_weighted_bce_LR_0.001/snapshot-epoch_2021-11-29-17:34:44_texture.pth'
 model = torch.load(model_path_)
 model.eval()
 
@@ -28,11 +29,11 @@ transform_A = A.Compose([
     # A.HorizontalFlip(p=0.5),
     # A.Flip(p=0.5),
     # A.RandomRotate90(p=0.5),
-    # A.ShiftScaleRotate (shift_limit=0.1, scale_limit=0.1, rotate_limit=30, interpolation=1, border_mode=4, p=0.5),
-    # A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-    # A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
-    # A.Affine (scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.2),
-    # A.PiecewiseAffine (scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.1),
+    # A.Affine(scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.3),
+    # A.PiecewiseAffine(scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.2),
+    # A.RandomBrightnessContrast(brightness_limit=(-0.3,0.3), contrast_limit=(-0.3,0.3), p=0.5),
+    # A.RGBShift(r_shift_limit=(-80,80), g_shift_limit=(-80,80), b_shift_limit=(-80,80), p=0.5),
+    # A.transforms.Emboss (alpha=(0.5, 1.0), strength=(0.7, 1.0), p=1),
     ToTensorV2()
 ])
 
@@ -45,18 +46,20 @@ transform_A2 = A.Compose([
     # A.RandomBrightnessContrast (brightness_limit=0.2, contrast_limit=0.2, p=0.5),
     # A.RGBShift (r_shift_limit=20, g_shift_limit=20, b_shift_limit=20, p=0.5),
     # A.Affine (scale=(0.8,1.2), translate_percent=0.1, rotate=(-20,20), shear=(-20,20), p=0.2),
+    # A.transforms.Emboss (alpha=(0.5, 1.0), strength=(0.7, 1.0), always_apply=False, p=1),
     # A.PiecewiseAffine (scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.1),
+    A.transforms.Emboss (alpha=(0.5, 1.0), strength=(0.7, 1.0), p=1),
     ToTensorV2()
 ])
 
-mydataset_embedding = datasets["dtd"]
+mydataset_embedding = datasets["tcd"]
 sampleDataset = mydataset_embedding(split='all', transform = transform_A, transform_ref = transform_A2)
 sampleLoader = torch.utils.data.DataLoader(sampleDataset, batch_size=1, shuffle=False)
 
 for i, data in enumerate(sampleLoader):
             _, _, inputs, target, patch, image_class = data[0], data[1], data[2], data[3], data[4], data[5]
 
-            if i == 5: # 44 164 271
+            if i == 16: # 44 164 271
                 
                 # print(inputs[0,0,:,:])
                 if torch.cuda.is_available():
@@ -75,7 +78,8 @@ for i, data in enumerate(sampleLoader):
                 break
 
 
-
+# inputs = inputs*255
+# patch = patch*255
 pred = seg.data.cpu().numpy()
 
 
@@ -103,9 +107,8 @@ plt.imshow(pred, alpha=0.5, cmap=plt.get_cmap("RdBu"))
 plt.show()
 
 
-ref_out = cv2.cvtColor(patch[0].permute(1, 2, 0).data.cpu().numpy()*255, cv2.COLOR_RGB2BGR)
-query_out = cv2.cvtColor(inputs[0].permute(1, 2, 0).data.cpu().numpy()*255, cv2.COLOR_RGB2BGR)
-
-cv2.imwrite('/home/ros/OS_TR/ref_1.jpg', ref_out)
-cv2.imwrite('/home/ros/OS_TR/query_1.jpg', query_out)
+# ref_out = cv2.cvtColor(patch[0].permute(1, 2, 0).data.cpu().numpy()*255, cv2.COLOR_RGB2BGR)
+# query_out = cv2.cvtColor(inputs[0].permute(1, 2, 0).data.cpu().numpy()*255, cv2.COLOR_RGB2BGR)
+# cv2.imwrite('/home/ros/OS_TR/ref_1.jpg', ref_out)
+# cv2.imwrite('/home/ros/OS_TR/query_1.jpg', query_out)
 

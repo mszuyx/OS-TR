@@ -5,17 +5,22 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import torchvision.transforms as transforms
 import cv2
+import time
 # import onnx
 # print(onnx.__version__)
 
 ref_path_ = '/home/ros/OS_TR/test_images/ref_4.jpg'
-query_path_ = '/home/ros/OS_TR/test_images/query_2.jpg'
-model_path_ = '/home/ros/OS_TR/log/dtd_dtd_weighted_bce_banded_0.001/snapshot-epoch_2021-11-25-16:42:11_texture.pth'
+query_path_ = '/home/ros/OS_TR/test_images/query_4.jpg'
+
+# model_path_ = '/home/ros/OS_TR/log/dtd_dtd_weighted_bce_banded_0.001/snapshot-epoch_2021-11-25-16:42:11_texture.pth'
+model_path_ = '/home/ros/OS_TR/log/tcd_ResNet50_frozen_weighted_bce_LR_0.001/snapshot-epoch_2021-11-29-17:20:11_texture.pth'
+
 model = torch.load(model_path_)
 model.eval()
 
-ref_img = np.asarray(Image.open(ref_path_).convert('RGB').resize((256,256)))/255.0 #.convert('RGB')
+ref_img = np.asarray(Image.open(ref_path_).convert('RGB').resize((256,256)))/255.0 #.convert('L').convert('RGB')
 query_img = np.asarray(Image.open(query_path_).resize((256,256)))/255.0
+
 ref_tensor = (torch.from_numpy(ref_img).permute(2,0,1)).unsqueeze(0)
 query_tensor = (torch.from_numpy(query_img).permute(2,0,1)).unsqueeze(0)
 
@@ -35,7 +40,10 @@ if torch.cuda.is_available():
     query_tensor = query_tensor.cuda()
     ref_tensor = ref_tensor.cuda()
 
+t = time.time()
 scores = model(query_tensor, ref_tensor)
+elapsed = time.time() - t
+print("inference time: "+str(elapsed))
 # scores[scores >= 0.5] = 1
 # scores[scores < 0.5] = 0
 seg = scores[0, 0, :, :]#.long()

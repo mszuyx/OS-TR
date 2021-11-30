@@ -19,7 +19,7 @@ from utils.loss import myloss
 import matplotlib.pyplot as plt
 
 
-def main(seed=2018, epoches=500): #80
+def main(seed=2018, epoches=100): #80
     parser = argparse.ArgumentParser(description='my_trans')
     # dataset option
     parser.add_argument('--dataset_name', type=str, default='tcd', choices=['dtd','tcd'], help='dataset name')
@@ -29,7 +29,7 @@ def main(seed=2018, epoches=500): #80
     parser.add_argument('--checkname', type=int, default=0, help='set the checkpoint name (default: 0)')
     parser.add_argument('--train_batch_size', type=int, default=24, metavar='N', help='input batch size for training (default: 24)')
     parser.add_argument('--test_batch_size', type=int, default=4, metavar='N', help='input batch size for testing (default: 4)')
-    parser.add_argument('--load_pre_train', type=str, default='/home/ros/OS_TR/log/dtd_dtd_weighted_bce_banded_0.001/snapshot-epoch_2021-11-28-20:09:18_texture.pth', 
+    parser.add_argument('--load_pre_train', type=str, default=None, 
                         help='load from pth file')
     args = parser.parse_args()
 
@@ -48,6 +48,7 @@ def main(seed=2018, epoches=500): #80
         A.PiecewiseAffine(scale=(0.03, 0.05), nb_rows=4, nb_cols=4, p=0.2),
         A.RandomBrightnessContrast(brightness_limit=(-0.3,0.3), contrast_limit=(-0.3,0.3), p=0.5),
         A.RGBShift(r_shift_limit=(-80,80), g_shift_limit=(-80,80), b_shift_limit=(-80,80), p=0.5),
+        A.transforms.Emboss (alpha=(0.5, 1.0), strength=(0.7, 1.0), p=0.1),
         ToTensorV2()
     ])
 
@@ -58,6 +59,7 @@ def main(seed=2018, epoches=500): #80
         A.RandomRotate90(p=0.5),
         A.RandomBrightnessContrast(brightness_limit=(-0.3,0.3), contrast_limit=(-0.3,0.3), p=0.5),
         A.RGBShift(r_shift_limit=(-80,80), g_shift_limit=(-80,80), b_shift_limit=(-80,80), p=0.5),
+        A.transforms.Emboss (alpha=(0.5, 1.0), strength=(0.7, 1.0), p=0.3),
         ToTensorV2()
     ])
 
