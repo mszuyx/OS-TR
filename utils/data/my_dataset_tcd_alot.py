@@ -13,23 +13,23 @@ from .generate_collages import generate_collages
 
 
 # np.random.seed(1)
-class tcd_embedding(torch.utils.data.Dataset):
+class tcd_alot_embedding(torch.utils.data.Dataset):
     def __init__(self, split='train', transform=None, transform_ref=None, checkpoint=0):
         self.split = split
         self.transform = transform
         self.transform_ref = transform_ref
         self.image_path = []
-        self.dir = '/home/ros/OS_TR/datasets/tcd/images'
+        self.dir = '/home/ros/OS_TR/datasets/tcd_alot/images'
         self.idx_to_class, self.image_path_all = self.load_path(self.dir)
-        print(self.idx_to_class)
+        # print(self.idx_to_class)
         self.texture = np.zeros((5, 256, 256, 3))
         self.test = []
         if split == 'train':
-            for i in range(5*checkpoint+5, 5*checkpoint+64):
-                j = i % 64
+            for i in range(5*checkpoint+5, 5*checkpoint+314):
+                j = i % 314
                 self.image_path.append(self.image_path_all[j])
         elif split == 'all':
-            for i in range(0, 64):
+            for i in range(0, 314):
                 self.test.append(self.idx_to_class[i])
                 self.image_path.append(self.image_path_all[i][:])
         else:
@@ -39,6 +39,10 @@ class tcd_embedding(torch.utils.data.Dataset):
         self.len = len(self.image_path)
         print("Split type: " + split)
         print("Total extracted classes: " + str(self.len))
+        self.total_img = 0
+        for i in range(self.len):
+            self.total_img += len(self.image_path[i])
+        print("Total # of images: "+str(self.total_img))
 
     def load_path(self, path):
         image_path_all = []
@@ -49,11 +53,12 @@ class tcd_embedding(torch.utils.data.Dataset):
             classes.append(dir)
             path_new = os.path.join(path, dir)
             # dirs_new = os.listdir(path_new)
-            dirs_new = glob.glob(path_new + '/*.jpg')
+            dirs_new = glob.glob(path_new + '/*')
+            # dirs_new_png = glob.glob(path_new + '/*.png')
             image_path_all.append(dirs_new)
+            # image_path_all.append(dirs_new_png)
         # class_to_idx = {classes[i]: i for i in range(len(classes))}
         idx_to_class = {i: classes[i] for i in range(len(classes))}
-
         return idx_to_class, image_path_all
 
     def load_image(self, path):

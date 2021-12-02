@@ -14,8 +14,8 @@ from .generate_collages import generate_collages
 
 # np.random.seed(1)
 class dtd_embedding(torch.utils.data.Dataset):
-    mean = (136.544425, 123.722431, 113.253360)
-    std = (68.155618, 66.077526, 68.080128)
+    # mean = (136.544425, 123.722431, 113.253360)
+    # std = (68.155618, 66.077526, 68.080128)
 
     def __init__(self, split='train', transform=None, transform_ref=None, checkpoint=0):
         self.split = split
@@ -42,7 +42,10 @@ class dtd_embedding(torch.utils.data.Dataset):
         self.len = len(self.image_path)
         print("Split type: " + split)
         print("Total extracted classes: " + str(self.len))
-        print("Total image path: " + str(self.len*len(self.image_path[0])))
+        self.total_img = 0
+        for i in range(self.len):
+            self.total_img += len(self.image_path[i])
+        print("Total # of images: "+str(self.total_img))
 
     def load_path(self, path):
         image_path_all = []
@@ -104,7 +107,4 @@ class dtd_embedding(torch.utils.data.Dataset):
         # return query_pic, support_pic, query_pic1, query_target, support_pic1, index_new+1
 
     def __len__(self):
-        if self.split == 'train':
-            return 5000
-        else:
-            return 500
+        return self.total_img

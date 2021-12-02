@@ -26,20 +26,17 @@ def generate_random_masks(img_size=(256, 256), segmentation_regions=5, points=No
     dists_b = [np.sqrt((xs - p[0]) ** 2 + (ys - p[1]) ** 2) for p in points]
     voronoi = np.argmin(dists_b, axis=0)
     masks_b = np.zeros((img_size[1], img_size[2], segmentation_regions), dtype=int)
-    
-    for m in range(segmentation_regions):
-        masks_b[:, :, m][voronoi == m] = 1
 
     for m in range(segmentation_regions):
         num_c = np.random.randint(1, 3)
         rs = np.random.uniform(10, 50, size = (num_c,))
         cpc = np.random.uniform(0, masks_b.shape[0], size = (num_c,2))
         dist_center = [np.sqrt((xs - c[0]) ** 2 + (ys - c[1]) ** 2) for c in cpc]
-
         for i in range(len(rs)):
             mask = dist_center[i] <= rs[i]
-            masks_b[mask] = 0
-            masks_b[:, :, m][mask] = 1
+            voronoi[mask] = m
+        masks_b[voronoi == m] = 0
+        masks_b[:, :, m][voronoi == m] = 1
 
     return masks_b
 
