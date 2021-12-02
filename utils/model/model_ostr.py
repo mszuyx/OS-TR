@@ -415,6 +415,7 @@ class encode(nn.Module):
         self.resnet_layer2 = nn.Sequential(*list(model.children())[5])
         self.resnet_layer3 = nn.Sequential(*list(model.children())[6])
         self.resnet_layer4 = nn.Sequential(*list(model.children())[7])
+        # we only use child 0 1 2 3 4 5 6 7
 
     def forward(self, x):
         x1 = self.resnet_layer1(x)
@@ -428,7 +429,8 @@ class encode1(nn.Module):
     def __init__(self, model):
         super().__init__()
         self.resnet = nn.Sequential(*list(model.children())[0:8])
-
+        # we only use child 0 1 2 3 4 5 6 7
+        
     def forward(self, x):
         x = self.resnet(x)
         return x
@@ -566,20 +568,21 @@ class OSnet_free(nn.Module):
             else:
                 img += img_g
 
-        # Decoder
+        # Decoder 
+        # 8 x 8
         img = F.interpolate(img, 16, mode='bilinear', align_corners=False) # bilinear upsampling x 2
-
+        # 16 x 16
         img = torch.cat([img, img3], dim=1)
         img = self.decode2(img)
         img = F.interpolate(img, 32, mode='bilinear', align_corners=False) # bilinear upsampling x 2
-
+        # 32 x 32
         img = torch.cat([img, img2], dim=1)
         img = self.decode3(img)
         img = F.interpolate(img, 64, mode='bilinear', align_corners=False) # bilinear upsampling x 2
-
+        # 64 x 64
         img = torch.cat([img, img1], dim=1)
         img = self.decode4(img)
         img = F.interpolate(img, 256, mode='bilinear', align_corners=False) # bilinear upsampling x 4
-
+        # 256 x 256
         img = torch.sigmoid(img)
         return img
